@@ -4,7 +4,7 @@
   "description": "Edge/Chrome extension to monitor pandora pages for playlists",
   "scripts": {
     "build": "webpack --mode production",
-    "lint": "eslint \"src/**/*.{ts,tsx,js,jsx}\""
+    "lint": "eslint \"content/src/**/*.{ts,tsx,js,jsx}\""
   },
   "repository": {
     "type": "git",

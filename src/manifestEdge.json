@@ -1,32 +1,35 @@
 {
-  "manifest_version": 3,
-  "name": "cke-tweaker",
-  "version": "0.1",
+    "manifest_version": 3,
+    "name": "panscrape",
+    "version": "0.1",
 
-  "description": "Allows tweaking of ckeditor behavior in a browser window",
+    "description": "Monitors pandora webpages (when turned on) to collect playlist information",
 
-  "icons": {
-  },
+    "icons": {
+      },
 
-  "permissions": [
-    "activeTab"
-  ],
-  "host_permissions": [
-    "http://*/*",
-    "https://*/*"
-  ],
-  "content_scripts": [
-    {
-      "matches": [ "<all_urls>" ],
-      "js": [ "content.js" ],
-      "run_at": "document_end"
-    }
-  ],
-  "web_accessible_resources": 
-  [
-    {
-      "resources": [ "/static/setSourceView.js" ],
-      "matches": [ "<all_urls>" ]
-    }
-  ]
-}
+    "permissions": [
+        "activeTab"
+      ],
+    "host_permissions": [
+        "http://*/*",
+        "https://*/*"
+      ],
+    "action": {
+        "default_popup": "popup.html",
+        "default_title": "Page Monitor"
+      },
+    "content_scripts": [
+        {
+          "matches": ["<all_urls>"],
+          "js": ["contentScript.js"],
+          "run_at": "document_idle"
+        }
+      ],
+    "web_accessible_resources": [
+        {
+          "resources": ["/static/setSourceView.js"],
+          "matches": ["<all_urls>"]
+        }
+      ]
+  }
