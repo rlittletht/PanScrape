@@ -1,3 +1,5 @@
+/// <reference types="chrome"/>
+
 // popup.ts
 
 const monitorToggle = document.getElementById(

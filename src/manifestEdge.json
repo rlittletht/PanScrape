@@ -22,13 +22,13 @@
     "content_scripts": [
         {
           "matches": ["<all_urls>"],
-          "js": ["contentScript.js"],
+          "js": ["content.js"],
           "run_at": "document_idle"
         }
       ],
     "web_accessible_resources": [
         {
-          "resources": ["/static/setSourceView.js"],
+          "resources": ["/static/scripts.js"],
           "matches": ["<all_urls>"]
         }
       ]

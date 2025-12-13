@@ -5,7 +5,7 @@ const webpack = require("webpack");
 const ManifestTransformPlugin = require('./build-plugins/ManifestTransformPlugin');
 
 const _resolve = {
-    extensions: [".ts"],
+    extensions: [".ts", ".js"],
 }
 
 const _module =
@@ -56,13 +56,13 @@ const _plugins =
     new CopyWebpackPlugin(
         {
             patterns: [
-//                {
-//                    from: "assets/*",
-//                    to: "assets/[name][ext][query]",
-//                },
                 {
                     from: "src/static/*",
                     to: "./static/[name][ext][query]",
+                },
+                {
+                    from: "src/popup/popup.html",
+                    to: "./popup.html",
                 }
             ]
         }),
@@ -85,13 +85,14 @@ module.exports =
 {
     devtool: 'source-map',
     entry:
-    [
-        "./src/content/content.ts"
-    ],
+    {
+        content: "./src/content/content.ts",
+        popup: "./src/popup/popup.ts"
+    },
     output:
     {
         path: path.resolve(__dirname, "dist"),
-        filename: "content.js"
+        filename: "[name].js"
     },
     module: _module,
     resolve: _resolve,

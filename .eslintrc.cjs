@@ -41,8 +41,10 @@ module.exports = {
     ignorePatterns: [
         "dist/",
         "build/",
+        "build-plugins/",
         "node_modules/",
-        "webpack.config.js"
+        "webpack.config.js",
+        ".eslintrc.cjs"
     ],
     rules: {
         // General JS / TS tweaks

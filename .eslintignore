@@ -1,0 +1,6 @@
+dist/
+build/
+build-plugins/
+node_modules/
+webpack.config.js
+.eslintrc.cjs
