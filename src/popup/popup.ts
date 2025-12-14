@@ -13,15 +13,16 @@ const successMessage = document.getElementById("successMessage") as HTMLDivEleme
 
 let currentSongCount = 0;
 
-function updateUI(isMonitoring: boolean, songCount: number) {
+function updateUI(isMonitoring: boolean, songCount: number)
+{
   monitorToggle.checked = isMonitoring;
   statusEl.textContent = isMonitoring
                          ? "Monitoring is ON for this page."
                          : "Monitoring is off for this page.";
-  
+
   currentSongCount = songCount;
   songCountEl.textContent = `Songs collected: ${songCount}`;
-  
+
   // Enable/disable buttons based on song count
   exportButton.disabled = songCount === 0;
   clearButton.disabled = songCount === 0;
@@ -42,12 +43,13 @@ chrome.tabs.query(
         (response) =>
         {
           // If there is no content script (e.g., restricted page), response may be undefined
-          if (chrome.runtime.lastError) {
+          if (chrome.runtime.lastError)
+          {
             console.log('Error getting monitoring state:', chrome.runtime.lastError);
             updateUI(false, 0);
             return;
           }
-          
+
           const isMonitoring = response?.isMonitoring === true;
           const songCount = response?.songCount || 0;
           updateUI(isMonitoring, songCount);
@@ -74,10 +76,10 @@ monitorToggle.addEventListener(
           {
             type: enable ? "START_MONITORING" : "STOP_MONITORING",
           },
-          () => {
-            if (chrome.runtime.lastError) {
+          () =>
+          {
+            if (chrome.runtime.lastError)
               console.log('Error toggling monitoring:', chrome.runtime.lastError);
-            }
           });
 
         statusEl.textContent = enable
@@ -86,79 +88,100 @@ monitorToggle.addEventListener(
       });
   });
 
-exportButton.addEventListener("click", () => {
-  chrome.tabs.query(
-    { active: true, currentWindow: true },
-    (tabs) => {
-      const tab = tabs[0];
-      if (!tab?.id) return;
-
-      chrome.tabs.sendMessage(
-        tab.id,
-        { type: "GET_COLLECTED_SONGS" },
-        (response) => {
-          if (chrome.runtime.lastError) {
-            console.log('Error getting songs:', chrome.runtime.lastError);
+exportButton.addEventListener(
+  "click",
+  () =>
+  {
+    chrome.tabs.query(
+        { active: true, currentWindow: true },
+        (tabs) =>
+        {
+          const tab = tabs[0];
+          if (!tab?.id)
             return;
-          }
 
-          const songs = response?.songs || [];
-          if (songs.length === 0) {
-            return;
-          }
+          chrome.tabs.sendMessage(
+              tab.id,
+              { type: "GET_COLLECTED_SONGS" },
+              (response) =>
+              {
+                if (chrome.runtime.lastError)
+                {
+                  console.log('Error getting songs:', chrome.runtime.lastError);
+                  return;
+                }
 
-          // Format songs as text
-          let textOutput = "Pandora Playlist Export\n";
-          textOutput += "======================\n\n";
-          
-          songs.forEach((song: any, index: number) => {
-            textOutput += `${index + 1}. ${song.songName}\n`;
-            textOutput += `   Artist: ${song.artistName}\n`;
-            textOutput += `   Album: ${song.albumName}\n`;
-            textOutput += `   Captured: ${new Date(song.timestamp).toLocaleString()}\n\n`;
-          });
+                const songs = response?.songs || [];
+                if (songs.length === 0)
+                  return;
 
-          // Copy to clipboard
-          navigator.clipboard.writeText(textOutput).then(() => {
-            // Show success message
-            successMessage.style.display = 'block';
-            setTimeout(() => {
-              successMessage.style.display = 'none';
-            }, 2000);
-          }).catch(err => {
-            console.error('Failed to copy to clipboard:', err);
-            alert('Failed to copy to clipboard');
-          });
+                // Format songs as text
+                let textOutput = "Pandora Playlist Export\n";
+                textOutput += "======================\n\n";
+
+                songs.forEach(
+                  (song: any, index: number) =>
+                  {
+                    textOutput += `${index + 1}. ${song.songName}\n`;
+                    textOutput += `   Artist: ${song.artistName}\n`;
+                    textOutput += `   Album: ${song.albumName}\n`;
+                    textOutput += `   Captured: ${new Date(song.timestamp).toLocaleString()}\n\n`;
+                  });
+
+                // Copy to clipboard
+                navigator.clipboard.writeText(textOutput).then(
+                  () =>
+                  {
+                    // Show success message
+                    successMessage.style.display = 'block';
+                    setTimeout(
+                      () =>
+                      {
+                        successMessage.style.display = 'none';
+                      },
+                      2000);
+                  }).catch(
+                  err =>
+                  {
+                    console.error('Failed to copy to clipboard:', err);
+                    alert('Failed to copy to clipboard');
+                  });
+              }
+            );
         }
       );
-    }
-  );
-});
+  });
 
-clearButton.addEventListener("click", () => {
-  if (!confirm('Are you sure you want to clear all collected songs?')) {
-    return;
-  }
+clearButton.addEventListener(
+  "click",
+  () =>
+  {
+    if (!confirm('Are you sure you want to clear all collected songs?'))
+      return;
 
-  chrome.tabs.query(
-    { active: true, currentWindow: true },
-    (tabs) => {
-      const tab = tabs[0];
-      if (!tab?.id) return;
-
-      chrome.tabs.sendMessage(
-        tab.id,
-        { type: "CLEAR_COLLECTED_SONGS" },
-        () => {
-          if (chrome.runtime.lastError) {
-            console.log('Error clearing songs:', chrome.runtime.lastError);
+    chrome.tabs.query(
+        { active: true, currentWindow: true },
+        (tabs) =>
+        {
+          const tab = tabs[0];
+          if (!tab?.id)
             return;
-          }
 
-          // Update UI
-          updateUI(monitorToggle.checked, 0);
+          chrome.tabs.sendMessage(
+              tab.id,
+              { type: "CLEAR_COLLECTED_SONGS" },
+              () =>
+              {
+                if (chrome.runtime.lastError)
+                {
+                  console.log('Error clearing songs:', chrome.runtime.lastError);
+                  return;
+                }
+
+                // Update UI
+                updateUI(monitorToggle.checked, 0);
+              }
+            );
         }
       );
-    }
-  );
-});
+  });
