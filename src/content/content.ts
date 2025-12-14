@@ -120,12 +120,19 @@ function startMonitoring() {
   // Capture current song immediately
   captureSongInfo();
 
-  // Find the parent Marquee__wrapper div to observe
-  const marqueeWrapper = document.querySelector('.Marquee__wrapper');
+  // Find the top-level NowPlaying__content container
+  const nowPlayingContent = document.querySelector('.NowPlaying__content');
   
-  if (!marqueeWrapper) {
-    console.warn('[PanScrape] Could not find Marquee__wrapper element. Is this a Pandora page?');
-    // Try to find any Marquee-related elements for debugging
+  if (!nowPlayingContent) {
+    console.warn('[PanScrape] Could not find NowPlaying__content element. Is this a Pandora page?');
+    // Try to find any NowPlaying-related elements for debugging
+    const allNowPlayingElements = document.querySelectorAll('[class*="NowPlaying"]');
+    console.log('[PanScrape] Found NowPlaying-related elements:', allNowPlayingElements.length);
+    allNowPlayingElements.forEach((el, idx) => {
+      console.log(`[PanScrape]   ${idx}: ${el.className}`);
+    });
+    
+    // Also check for Marquee elements as fallback
     const allMarqueeElements = document.querySelectorAll('[class*="Marquee"]');
     console.log('[PanScrape] Found Marquee-related elements:', allMarqueeElements.length);
     allMarqueeElements.forEach((el, idx) => {
@@ -134,7 +141,7 @@ function startMonitoring() {
     return;
   }
 
-  console.log('[PanScrape] Found Marquee__wrapper element:', marqueeWrapper);
+  console.log('[PanScrape] Found NowPlaying__content element:', nowPlayingContent);
 
   // Create observer to watch for changes
   observer = new MutationObserver((mutations) => {
@@ -157,15 +164,15 @@ function startMonitoring() {
     }
   });
 
-  // Observe the Marquee__wrapper parent element
-  observer.observe(marqueeWrapper, {
+  // Observe the NowPlaying__content top-level element
+  observer.observe(nowPlayingContent, {
     childList: true,
     subtree: true,
     characterData: true,
     characterDataOldValue: true
   });
 
-  console.log('[PanScrape] ? Now watching Marquee__wrapper for song changes...');
+  console.log('[PanScrape] ? Now watching NowPlaying__content for song changes...');
   console.log('[PanScrape] Observer config: { childList: true, subtree: true, characterData: true }');
 }
 
