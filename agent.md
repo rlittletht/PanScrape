@@ -88,7 +88,82 @@ Always include the original prompt instructions
 - The content script receives these commands and can implement actual Pandora page monitoring logic
 - All communication happens via Chrome's messaging API between popup and content script
 
-**Next Steps**:
-- Implement actual Pandora playlist scraping logic in the `startMonitoring()` function
-- Add DOM observation and data collection logic
-- Implement data storage/export functionality
+---
+
+### 2025-01-XX - Implemented Pandora song monitoring and data export
+**Original Prompt**: "i want the monitor when the contents of the div with class="Marquee__wrapper__content" changes. When it changes, I want to capture the text contents of that div... Once collected, I want to save that information somewhere so I can save it to a local file (or copy it to the clipboard)."
+
+**Changes Made**:
+
+1. **Content Script (`src/content/content.ts`)** - Song Monitoring:
+   - Added `collectedSongs` array to store captured song data (song name, artist, album, timestamp)
+   - Implemented `captureSongInfo()` function that:
+     - Queries `.Marquee__wrapper__content` for song name
+     - Queries `.NowPlayingTopInfo__current__artistName` for artist name
+     - Queries `.nowPlayingTopInfo__current__albumName` for album name
+     - Stores data with ISO timestamp
+     - Prevents duplicate captures of the same song
+   - Enhanced `startMonitoring()` to:
+     - Capture current song immediately when monitoring starts
+     - Create MutationObserver to watch for DOM changes in song element
+     - Observe both the song element and its parent for changes
+     - Trigger `captureSongInfo()` when changes detected
+   - Added new message handlers:
+     - `GET_COLLECTED_SONGS` - returns the array of collected songs
+     - `CLEAR_COLLECTED_SONGS` - clears the collected songs array
+   - Updated `GET_MONITORING_STATE` to also return song count
+
+2. **Popup Interface (`src/popup/popup.html`)**:
+   - Added song count display showing "Songs collected: X"
+   - Added "Copy Songs to Clipboard" button (disabled when no songs)
+   - Added "Clear Collected Songs" button (disabled when no songs)
+   - Added success message that appears after copying to clipboard
+   - Enhanced styling for buttons (primary/secondary colors, disabled states)
+
+3. **Popup Script (`src/popup/popup.ts`)**:
+   - Added `updateUI()` function to centrally manage UI state updates
+   - Enhanced state query to include song count
+   - Implemented export button handler that:
+     - Requests collected songs from content script
+     - Formats songs as readable text with numbering
+     - Includes song name, artist, album, and capture timestamp
+     - Copies formatted text to clipboard using Clipboard API
+     - Shows success message for 2 seconds
+   - Implemented clear button handler that:
+     - Shows confirmation dialog before clearing
+     - Sends clear message to content script
+     - Updates UI to reflect empty collection
+   - Added error handling for Chrome runtime errors
+
+**Purpose**:
+- Automatically monitors Pandora pages for song changes when monitoring is enabled
+- Captures song name, artist, album for each track played
+- Stores all captured songs in memory (per-tab)
+- Displays real-time count of collected songs in popup
+- Allows user to export all collected songs to clipboard with one click
+- Allows user to clear collection and start fresh
+- Prevents duplicate captures when DOM changes rapidly
+- Works seamlessly with the existing on/off monitoring toggle
+
+**How It Works**:
+1. User navigates to Pandora and plays music
+2. User clicks extension icon and enables monitoring
+3. Extension immediately captures current song and watches for changes
+4. As songs change, extension automatically captures new song information
+5. User can see song count in popup at any time
+6. When ready, user clicks "Copy Songs to Clipboard" to export all collected songs
+7. User can paste the formatted playlist anywhere (text file, document, etc.)
+8. User can clear the collection to start fresh with "Clear Collected Songs"
+
+**Data Format Example**:
+```
+Pandora Playlist Export
+======================
+
+1. Song Title
+   Artist: Artist Name
+   Album: Album Name
+   Captured: 1/13/2025, 2:30:45 PM
+
+2. Next Song
+   ...
