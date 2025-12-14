@@ -225,3 +225,43 @@ Pandora Playlist Export
 - `inline-source-map` increases file size but is necessary for Chrome extension debugging
 - The source map is embedded as a base64 data URL at the end of each .js file
 - This avoids the CSP (Content Security Policy) restrictions that block external .map file loading in extensions
+
+---
+
+### 2025-01-XX - Changed monitoring target and export format
+**Original Prompt**: "this is still not catching changes. perhaps monitoring the top level NowPlaying_content class will catch it?" and "change the export to copy to the clipboard as a tabbed list of songs suitable for pasting into excel"
+
+**Changes Made**:
+
+1. **Content Script (`src/content/content.ts`)** - Changed Monitoring Target:
+   - Changed `startMonitoring()` to observe `.NowPlaying_content` top-level container instead of `.Marquee__wrapper`
+   - This broader scope should catch more DOM changes in the Now Playing section
+   - Enhanced debugging to show both NowPlaying and Marquee elements if target not found
+   - Helps identify the exact class names Pandora uses in different scenarios
+
+2. **Popup Script (`src/popup/popup.ts`)** - Excel-Compatible Export:
+   - Changed export format from human-readable text to tab-separated values (TSV)
+   - Format now includes header row: `Song Title\tArtist\tAlbum\tCaptured\n`
+   - Each song is a row with fields separated by tabs (`\t`)
+   - Date/time formatted with `toLocaleString()` for readability
+
+**Purpose**:
+- **Broader Monitoring**: `.NowPlaying_content` is the top-level container for the entire Now Playing section, making it more likely to catch DOM updates when songs change
+- **Excel Integration**: Tab-separated format can be pasted directly into Excel, Google Sheets, or any spreadsheet application
+  - Automatically creates columns for each field
+  - Header row labels each column appropriately
+  - Easy to sort, filter, and analyze in spreadsheet software
+
+**Excel Export Format**:
+```
+Song Title	Artist	Album	Captured
+Song Name 1	Artist 1	Album 1	1/13/2025, 2:30:45 PM
+Song Name 2	Artist 2	Album 2	1/13/2025, 2:34:22 PM
+```
+
+**How to Use Excel Export**:
+1. Click "Copy Songs to Clipboard"
+2. Open Excel or Google Sheets
+3. Click on cell A1
+4. Paste (Ctrl+V)
+5. Data automatically populates into columns
