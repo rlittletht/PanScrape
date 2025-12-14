@@ -83,7 +83,7 @@ const _plugins =
 
 module.exports =
 {
-    devtool: 'source-map',
+    devtool: 'inline-source-map',
     entry:
     {
         content: "./src/content/content.ts",

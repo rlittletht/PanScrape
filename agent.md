@@ -188,3 +188,40 @@ Pandora Playlist Export
 - Handles different Pandora DOM structures where song title may be in different elements
 - Ensures song title is always captured whether it's in `__content` or `__content__child`
 - Prevents missing song changes due to DOM structure variations
+
+---
+
+### 2025-01-XX - Added debugging and fixed source maps
+**Original Prompt**: "this seems to only collect 1 song (the first song) and not see the changes when the page's dom updates" and "when i try to debug the sources in dev tools, I get an error 'source map failed to load'... 'ERR_BLOCKED_BY_CLIENT'"
+
+**Changes Made**:
+
+1. **Content Script (`src/content/content.ts`)** - Enhanced Debugging:
+   - Added `lastCapturedSong` variable to track what was last captured
+   - Added extensive console logging throughout:
+     - Logs which element the song was found in
+     - Shows current song data being processed
+     - Logs when MutationObserver is triggered with mutation count
+     - Shows mutation details (type, target, class)
+     - Clear indicators when songs are captured vs skipped
+   - Enhanced duplicate detection with separate tracking
+   - Added fallback to find all Marquee-related elements if `.Marquee__wrapper` not found
+   - Added `characterDataOldValue: true` to observer config for better change tracking
+
+2. **Webpack Configuration (`webpack.config.js`)** - Fixed Source Maps:
+   - Changed `devtool` from `'source-map'` to `'inline-source-map'`
+   - Inline source maps embed the source map directly in the generated JavaScript file
+   - Prevents `ERR_BLOCKED_BY_CLIENT` error that occurs when Chrome extensions try to load external .map files
+
+**Purpose**:
+- **Debugging Support**: Extensive logging helps diagnose why song changes aren't being detected
+- **Source Map Fix**: Allows TypeScript source debugging in Chrome DevTools
+  - Can now set breakpoints in original .ts files
+  - Can see TypeScript variable names and code structure
+  - No more "source map failed to load" errors
+- **Better Troubleshooting**: Console output shows exactly what the observer sees and when it triggers
+
+**Technical Notes**:
+- `inline-source-map` increases file size but is necessary for Chrome extension debugging
+- The source map is embedded as a base64 data URL at the end of each .js file
+- This avoids the CSP (Content Security Policy) restrictions that block external .map file loading in extensions
