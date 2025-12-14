@@ -10,6 +10,7 @@ let collectedSongs: Array<{
   albumName: string;
   timestamp: string;
 }> = [];
+let lastCapturedSong = '';
 
 // Listen for messages from the popup
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
@@ -41,6 +42,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
   if (message.type === "CLEAR_COLLECTED_SONGS") {
     collectedSongs = [];
+    lastCapturedSong = '';
     console.log("[PanScrape] Cleared collected songs");
     sendResponse({ success: true });
     return true;
@@ -49,9 +51,24 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
 function captureSongInfo() {
   try {
-    // Find the song name
+    // Find the song name - try Marquee__wrapper__content first, then look for child elements
+    let songName = '';
+    
+    // Try the main content div
     const songElement = document.querySelector('.Marquee__wrapper__content');
-    const songName = songElement?.textContent?.trim() || '';
+    if (songElement) {
+      songName = songElement.textContent?.trim() || '';
+      console.log('[PanScrape] Found song in Marquee__wrapper__content:', songName);
+    }
+    
+    // If no song name, try the child elements (take the first one)
+    if (!songName) {
+      const childElement = document.querySelector('.Marquee__wrapper__content__child');
+      if (childElement) {
+        songName = childElement.textContent?.trim() || '';
+        console.log('[PanScrape] Found song in Marquee__wrapper__content__child:', songName);
+      }
+    }
 
     // Find the artist and album info container
     const infoContainer = document.querySelector('.nowPlayingTopInfo__current__sourceInfo');
@@ -64,8 +81,10 @@ function captureSongInfo() {
     const albumElement = infoContainer?.querySelector('.nowPlayingTopInfo__current__albumName');
     const albumName = albumElement?.textContent?.trim() || '';
 
-    // Only save if we have at least a song name
-    if (songName) {
+    console.log('[PanScrape] Current song data:', { songName, artistName, albumName });
+
+    // Only save if we have at least a song name and it's different from the last one
+    if (songName && songName !== lastCapturedSong) {
       const newSong = {
         songName,
         artistName,
@@ -79,9 +98,16 @@ function captureSongInfo() {
           lastSong.songName !== newSong.songName || 
           lastSong.artistName !== newSong.artistName) {
         collectedSongs.push(newSong);
-        console.log('[PanScrape] Captured song:', newSong);
+        lastCapturedSong = songName;
+        console.log('[PanScrape] ? Captured NEW song:', newSong);
         console.log(`[PanScrape] Total songs collected: ${collectedSongs.length}`);
+      } else {
+        console.log('[PanScrape] Song already captured, skipping duplicate');
       }
+    } else if (songName === lastCapturedSong) {
+      console.log('[PanScrape] Same song as last capture, skipping');
+    } else {
+      console.log('[PanScrape] No song name found');
     }
   } catch (error) {
     console.error('[PanScrape] Error capturing song info:', error);
@@ -94,44 +120,53 @@ function startMonitoring() {
   // Capture current song immediately
   captureSongInfo();
 
-  // Find the song name div to observe
-  const songElement = document.querySelector('.Marquee__wrapper__content');
+  // Find the parent Marquee__wrapper div to observe
+  const marqueeWrapper = document.querySelector('.Marquee__wrapper');
   
-  if (!songElement) {
-    console.warn('[PanScrape] Could not find song element. Is this a Pandora page?');
+  if (!marqueeWrapper) {
+    console.warn('[PanScrape] Could not find Marquee__wrapper element. Is this a Pandora page?');
+    // Try to find any Marquee-related elements for debugging
+    const allMarqueeElements = document.querySelectorAll('[class*="Marquee"]');
+    console.log('[PanScrape] Found Marquee-related elements:', allMarqueeElements.length);
+    allMarqueeElements.forEach((el, idx) => {
+      console.log(`[PanScrape]   ${idx}: ${el.className}`);
+    });
     return;
   }
+
+  console.log('[PanScrape] Found Marquee__wrapper element:', marqueeWrapper);
 
   // Create observer to watch for changes
   observer = new MutationObserver((mutations) => {
     if (!isMonitoring) return;
     
+    console.log(`[PanScrape] MutationObserver triggered with ${mutations.length} mutations`);
+    
     // Check if the song name changed
+    let shouldCapture = false;
     for (const mutation of mutations) {
+      console.log(`[PanScrape] Mutation type: ${mutation.type}, target: ${mutation.target.nodeName}, class: ${(mutation.target as Element).className}`);
       if (mutation.type === 'childList' || mutation.type === 'characterData') {
-        captureSongInfo();
-        break; // Only capture once per batch of mutations
+        shouldCapture = true;
       }
+    }
+    
+    if (shouldCapture) {
+      console.log('[PanScrape] Capturing song info due to DOM change...');
+      captureSongInfo();
     }
   });
 
-  // Observe the song element and its parent container for changes
-  observer.observe(songElement, {
+  // Observe the Marquee__wrapper parent element
+  observer.observe(marqueeWrapper, {
     childList: true,
     subtree: true,
-    characterData: true
+    characterData: true,
+    characterDataOldValue: true
   });
 
-  // Also observe the parent container in case the entire element is replaced
-  const parentContainer = songElement.parentElement;
-  if (parentContainer) {
-    observer.observe(parentContainer, {
-      childList: true,
-      subtree: true
-    });
-  }
-
-  console.log('[PanScrape] Now watching for song changes...');
+  console.log('[PanScrape] ? Now watching Marquee__wrapper for song changes...');
+  console.log('[PanScrape] Observer config: { childList: true, subtree: true, characterData: true }');
 }
 
 function stopMonitoring() {

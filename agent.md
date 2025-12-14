@@ -167,3 +167,24 @@ Pandora Playlist Export
 
 2. Next Song
    ...
+```
+
+---
+
+### 2025-01-XX - Updated song title monitoring logic
+**Original Prompt**: "instead of monitoring only Marquee_wrapper_content, instead monitor its parent class Marquee_wrapper. Then extract the song title either from Marquee__warpper__content or Marquee__wrapper__content__child. If there are more than 1 of the child elements, choose the first one"
+
+**Changes Made**:
+
+1. **Content Script (`src/content/content.ts`)** - Updated Monitoring:
+   - Changed `startMonitoring()` to observe `.Marquee__wrapper` parent element instead of `.Marquee__wrapper__content`
+   - Updated `captureSongInfo()` to:
+     - First try to get song name from `.Marquee__wrapper__content`
+     - If not found, try `.Marquee__wrapper__content__child` (takes first match)
+     - Fallback ensures song title is captured regardless of Pandora's DOM structure
+
+**Purpose**:
+- More robust monitoring that watches the parent container instead of specific child
+- Handles different Pandora DOM structures where song title may be in different elements
+- Ensures song title is always captured whether it's in `__content` or `__content__child`
+- Prevents missing song changes due to DOM structure variations
