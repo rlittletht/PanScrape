@@ -265,3 +265,63 @@ Song Name 2	Artist 2	Album 2	1/13/2025, 2:34:22 PM
 3. Click on cell A1
 4. Paste (Ctrl+V)
 5. Data automatically populates into columns
+
+---
+
+### 2025-01-XX - Added persistent storage for collected songs
+**Original Prompt**: "change the extension to retain the list of songs between browser sessions"
+
+**Changes Made**:
+
+1. **Manifest (`src/manifestEdge.json`)**:
+   - Added `"storage"` permission to the permissions array
+   - Required for using chrome.storage.local API
+
+2. **Content Script (`src/content/content.ts`)** - Persistent Storage:
+   - Added `STORAGE_KEY` constant: `'panscrape_collected_songs'`
+   - Implemented `loadCollectedSongs()` async function:
+     - Calls `chrome.storage.local.get()` to retrieve saved songs
+     - Loads songs into `collectedSongs` array on initialization
+     - Restores `lastCapturedSong` from loaded data
+     - Logs how many songs were loaded
+   - Implemented `saveCollectedSongs()` async function:
+     - Calls `chrome.storage.local.set()` to persist songs
+     - Called automatically after each new song is captured
+     - Called when clearing songs (saves empty array)
+     - Logs save operations for debugging
+   - Added `loadCollectedSongs()` call at script initialization
+   - Modified `CLEAR_COLLECTED_SONGS` handler to save empty state to storage
+
+**Purpose**:
+- **Persistent Storage**: Songs are now saved to Chrome's local storage and survive browser restarts
+- **Automatic Saving**: Every time a new song is captured, the entire collection is saved
+- **Seamless Experience**: Users can close the browser and reopen it without losing their collected playlist
+- **No Data Loss**: Even if the tab is closed or browser crashes, all captured songs up to that point are preserved
+
+**How It Works**:
+1. When content script loads, it automatically retrieves previously saved songs
+2. Each time a new song is captured, the updated list is saved to storage
+3. Storage is local to the browser (not synced across devices)
+4. When user clears songs, empty array is saved to storage
+5. Song data persists indefinitely until explicitly cleared by user
+
+**Technical Details**:
+- Uses `chrome.storage.local` API (async/await pattern)
+- Storage limit: Typically 5-10MB for local storage
+- Data stored as JSON in browser's extension storage
+- Each browser profile has its own storage (data not shared between profiles)
+- Storage survives extension updates and browser restarts
+
+**Storage Data Structure**:
+```typescript
+{
+  "panscrape_collected_songs": [
+    {
+      "songName": "Song Title",
+      "artistName": "Artist Name",
+      "albumName": "Album Name",
+      "timestamp": "2025-01-13T14:30:45.123Z"
+    },
+    ...
+  ]
+}

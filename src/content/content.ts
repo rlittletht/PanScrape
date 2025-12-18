@@ -12,6 +12,45 @@ let collectedSongs: Array<{
   }> = [];
 let lastCapturedSong = '';
 
+// Storage key for persisting songs
+const STORAGE_KEY = 'panscrape_collected_songs';
+
+// Load collected songs from storage on initialization
+async function loadCollectedSongs()
+{
+  try
+  {
+    const result = await chrome.storage.local.get(STORAGE_KEY);
+    if (result[STORAGE_KEY] && Array.isArray(result[STORAGE_KEY]))
+    {
+      collectedSongs = result[STORAGE_KEY];
+      if (collectedSongs.length > 0)
+      {
+        lastCapturedSong = collectedSongs[collectedSongs.length - 1].songName;
+        console.log(`[PanScrape] Loaded ${collectedSongs.length} songs from storage`);
+      }
+    }
+  }
+  catch (error)
+  {
+    console.error('[PanScrape] Error loading songs from storage:', error);
+  }
+}
+
+// Save collected songs to storage
+async function saveCollectedSongs()
+{
+  try
+  {
+    await chrome.storage.local.set({ [STORAGE_KEY]: collectedSongs });
+    console.log(`[PanScrape] Saved ${collectedSongs.length} songs to storage`);
+  }
+  catch (error)
+  {
+    console.error('[PanScrape] Error saving songs to storage:', error);
+  }
+}
+
 // Listen for messages from the popup
 chrome.runtime.onMessage.addListener(
   (message, sender, sendResponse) =>
@@ -51,6 +90,8 @@ chrome.runtime.onMessage.addListener(
       collectedSongs = [];
       lastCapturedSong = '';
       console.log("[PanScrape] Cleared collected songs");
+      // Save empty array to storage
+      saveCollectedSongs();
       sendResponse({ success: true });
       return true;
     }
@@ -113,6 +154,9 @@ function captureSongInfo()
         lastCapturedSong = songName;
         console.log('[PanScrape] ✓ Captured NEW song:', newSong);
         console.log(`[PanScrape] Total songs collected: ${collectedSongs.length}`);
+        
+        // Save to persistent storage
+        saveCollectedSongs();
       }
       else
         console.log('[PanScrape] Song already captured, skipping duplicate');
@@ -215,3 +259,6 @@ function stopMonitoring()
 
 // Initialize - monitoring is OFF by default
 console.log("[PanScrape] Content script loaded. Monitoring is off by default.");
+
+// Load saved songs from storage
+loadCollectedSongs();
