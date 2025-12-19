@@ -325,3 +325,73 @@ Song Name 2	Artist 2	Album 2	1/13/2025, 2:34:22 PM
     ...
   ]
 }
+```
+
+---
+
+### 2025-01-XX - Added elapsed time capture
+**Original Prompt**: "when capturing song info, also capture the duration played so far. the duration is in the div with class "Duration". That div contains several span elements, only the span with attribute data-qa="elapsed_time' has the elapsed time. the elapsed time is displayed as mm:ss. I want to store the total seconds"
+
+**Changes Made**:
+
+1. **Content Script (`src/content/content.ts`)** - Elapsed Time Capture:
+   - Updated `collectedSongs` type definition to include `elapsedSeconds: number` field
+   - Implemented `parseElapsedTime()` function:
+     - Accepts time string in "mm:ss" format
+     - Splits string by `:` separator
+     - Parses minutes and seconds as integers
+     - Converts to total seconds: `minutes * 60 + seconds`
+     - Returns 0 if parsing fails
+   - Enhanced `captureSongInfo()` to:
+     - Query `.Duration` container div
+     - Find `span[data-qa="elapsed_time"]` within Duration
+     - Extract text content (mm:ss format)
+     - Convert to total seconds using `parseElapsedTime()`
+     - Store in `elapsedSeconds` field
+     - Log elapsed time for debugging
+   - Added logging when Duration container or elapsed_time span not found
+
+2. **Popup Script (`src/popup/popup.ts`)** - Excel Export with Elapsed Time:
+   - Updated export header row to: `Song Title\tArtist\tAlbum\tElapsed (sec)\tCaptured\n`
+   - Added `elapsedSeconds` column to each data row
+   - Defaults to 0 if `elapsedSeconds` field not present (for backward compatibility)
+
+**Purpose**:
+- **Track Listening Duration**: Captures how far into each song the user was when it changed
+- **Usage Analytics**: Helps identify which songs were skipped early vs listened to completion
+- **Excel Analysis**: Elapsed time column allows sorting/filtering by listen duration
+- **Backward Compatible**: Older saved songs without elapsed time will show 0 seconds
+
+**How It Works**:
+1. When a song change is detected, extension finds the Duration element
+2. Extracts the elapsed time from the `data-qa="elapsed_time"` span
+3. Parses "mm:ss" format (e.g., "2:34" ? 154 seconds)
+4. Stores total seconds with song data
+5. Exports elapsed seconds as a column in Excel format
+
+**Example Data**:
+- Input: "2:34" ? Output: 154 seconds
+- Input: "0:45" ? Output: 45 seconds
+- Input: "3:00" ? Output: 180 seconds
+
+**Updated Excel Export Format**:
+```
+Song Title	Artist	Album	Elapsed (sec)	Captured
+Song Name 1	Artist 1	Album 1	154	1/13/2025, 2:30:45 PM
+Song Name 2	Artist 2	Album 2	45	1/13/2025, 2:34:22 PM
+```
+
+**Updated Storage Data Structure**:
+```typescript
+{
+  "panscrape_collected_songs": [
+    {
+      "songName": "Song Title",
+      "artistName": "Artist Name",
+      "albumName": "Album Name",
+      "elapsedSeconds": 154,
+      "timestamp": "2025-01-13T14:30:45.123Z"
+    },
+    ...
+  ]
+}

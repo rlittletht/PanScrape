@@ -8,6 +8,7 @@ let collectedSongs: Array<{
     songName: string;
     artistName: string;
     albumName: string;
+    elapsedSeconds: number;
     timestamp: string;
   }> = [];
 let lastCapturedSong = '';
@@ -49,6 +50,29 @@ async function saveCollectedSongs()
   {
     console.error('[PanScrape] Error saving songs to storage:', error);
   }
+}
+
+// Convert mm:ss format to total seconds
+function parseElapsedTime(timeString: string): number
+{
+  try
+  {
+    const parts = timeString.trim().split(':');
+    if (parts.length === 2)
+    {
+      const minutes = parseInt(parts[0], 10);
+      const seconds = parseInt(parts[1], 10);
+      if (!isNaN(minutes) && !isNaN(seconds))
+      {
+        return minutes * 60 + seconds;
+      }
+    }
+  }
+  catch (error)
+  {
+    console.error('[PanScrape] Error parsing elapsed time:', error);
+  }
+  return 0;
 }
 
 // Listen for messages from the popup
@@ -134,7 +158,29 @@ function captureSongInfo()
     const albumElement = infoContainer?.querySelector('.nowPlayingTopInfo__current__albumName');
     const albumName = albumElement?.textContent?.trim() || '';
 
-    console.log('[PanScrape] Current song data:', { songName, artistName, albumName });
+    // Find elapsed time
+    let elapsedSeconds = 0;
+    const durationContainer = document.querySelector('.Duration');
+    if (durationContainer)
+    {
+      const elapsedTimeSpan = durationContainer.querySelector('span[data-qa="elapsed_time"]');
+      if (elapsedTimeSpan)
+      {
+        const elapsedTimeText = elapsedTimeSpan.textContent?.trim() || '';
+        elapsedSeconds = parseElapsedTime(elapsedTimeText);
+        console.log('[PanScrape] Found elapsed time:', elapsedTimeText, '=', elapsedSeconds, 'seconds');
+      }
+      else
+      {
+        console.log('[PanScrape] Could not find elapsed_time span in Duration container');
+      }
+    }
+    else
+    {
+      console.log('[PanScrape] Could not find Duration container');
+    }
+
+    console.log('[PanScrape] Current song data:', { songName, artistName, albumName, elapsedSeconds });
 
     // Only save if we have at least a song name and it's different from the last one
     if (songName && songName !== lastCapturedSong)
@@ -143,6 +189,7 @@ function captureSongInfo()
           songName,
           artistName,
           albumName,
+          elapsedSeconds,
           timestamp: new Date().toISOString()
         };
 

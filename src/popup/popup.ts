@@ -109,12 +109,13 @@ exportButton.addEventListener("click", () => {
 
           // Format songs as tab-separated values for Excel
           // Header row
-          let textOutput = "Song Title\tArtist\tAlbum\tCaptured\n";
+          let textOutput = "Song Title\tArtist\tAlbum\tElapsed (sec)\tCaptured\n";
           
           // Data rows
           songs.forEach((song: any) => {
             const capturedDate = new Date(song.timestamp).toLocaleString();
-            textOutput += `${song.songName}\t${song.artistName}\t${song.albumName}\t${capturedDate}\n`;
+            const elapsedSeconds = song.elapsedSeconds || 0;
+            textOutput += `${song.songName}\t${song.artistName}\t${song.albumName}\t${elapsedSeconds}\t${capturedDate}\n`;
           });
 
           // Copy to clipboard
